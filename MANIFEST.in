@@ -1,0 +1,4 @@
+include LICENSE
+include README.rst
+recursive-include simplesqs/static *
+recursive-include simplesqs/templates *
