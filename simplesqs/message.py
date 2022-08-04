@@ -86,6 +86,29 @@ class MessagingHandler(MessagingBase):
         messages.sort(key=lambda x: (x.timestamp))
         return messages
 
+    # Recieve a batch of messages with a maximum of 10
+    # messages at a time. You must delete the messages by
+    # calling message.delete() after you are done with them.
+    def batch_receive_messages(self, message_type=None, batch_size=10):
+        messages = []
+        response = self.client.receive_message(
+            QueueUrl=self.get_queue_url(),
+            MaxNumberOfMessages=batch_size,
+        )
+
+        for message in response.get('Messages', []):
+            message_body = message["Body"]
+            data = json.loads(message_body)
+            data['MessageId'] = message['MessageId']
+            data['ReceiptHandle'] = message['ReceiptHandle']
+            data['queue_name'] = self.queue_name
+            if not message_type or data.get('message_type', None) == message_type:
+                message_obj = self.message_factory.create_message(**data)
+                messages.append(message_obj)
+
+        messages.sort(key=lambda x: (x.timestamp))
+        return messages
+
 
 class Message(MessagingBase):
     message_type = "MessageBase"
