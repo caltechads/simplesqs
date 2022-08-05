@@ -120,6 +120,8 @@ class Message(MessagingBase):
         self.message_id = MessageId
         for key,value in kwargs.items():
             setattr(self, key, value)
+            if key == 'Timestamp':
+                self.timestamp = value
 
     def delete(self):
         self.client.delete_message(
