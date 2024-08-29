@@ -6,3 +6,4 @@ build
 *pycache*
 .venv
 
+simplesqs.code-workspace
