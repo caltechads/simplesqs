@@ -31,8 +31,8 @@ Reading messages:
     queue_name = "test_queue_simplesqs"
     handler = MessagingHandler(queue_name=queue_name)
 
-    while(True):
-        messages = handler.batch_receive_messages()
+    while True:
+        messages = handler.batch_receive_messages(message_type='test')
         if len(messages) == 0:
             break
         for message in messages:

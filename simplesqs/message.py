@@ -1,22 +1,26 @@
 #!/usr/bin/env python
 from datetime import datetime
-import boto3
 import json
+import boto3
 
 
 class MessageFactory():
+    """Generates Message objects"""
 
     def create_message(self, **kwargs):
+        """Create a Message object"""
         return Message(**kwargs)
 
 
 class MessagingBase():
+    """Base class for messaging"""
 
     def __init__(self, queue_name=None):
         self.queue_name = queue_name
         self.client = boto3.client('sqs', region_name='us-west-2')
 
     def get_queue_url(self):
+        """Get the URL of the queue"""
         response = self.client.get_queue_url(
             QueueName=self.queue_name,
         )
@@ -24,6 +28,7 @@ class MessagingBase():
 
 
 class MessagingHandler(MessagingBase):
+    """Class for sending and receiving messages, and creating queues"""
     message_factory_class = MessageFactory
 
     def __init__(self, message_factory=None, **kwargs):
@@ -34,6 +39,7 @@ class MessagingHandler(MessagingBase):
             self.message_factory = self.message_factory_class()
 
     def create_queue(self):
+        """Create a queue"""
         response = self.client.create_queue(
             QueueName=self.queue_name,
             Attributes={
@@ -44,6 +50,7 @@ class MessagingHandler(MessagingBase):
         return response
 
     def send_message(self, message_type, message):
+        """Send a message"""
         message['message_type'] = message_type
         if not 'timestamp' in message:
             message['timestamp'] = datetime.now().isoformat()
@@ -54,10 +61,11 @@ class MessagingHandler(MessagingBase):
         return response
 
     def receive_message(self):
+        """Receive a message"""
         response = self.client.receive_message(
             QueueUrl=self.get_queue_url(),
             MaxNumberOfMessages=1,
-        )        
+        )
 
         count = len(response.get('Messages', []))
         if count > 0:
@@ -73,9 +81,10 @@ class MessagingHandler(MessagingBase):
         return None
 
     def receive_messages(self, message_type=None):
+        """Receive messages"""
         messages = []
         found = True
-        while(found):
+        while found :
             message = self.receive_message()
             if message is not None:
                 if message_type is None or message.message_type == message_type:
@@ -86,10 +95,11 @@ class MessagingHandler(MessagingBase):
         messages.sort(key=lambda x: (x.timestamp))
         return messages
 
-    # Recieve a batch of messages with a maximum of 10
-    # messages at a time. You must delete the messages by
-    # calling message.delete() after you are done with them.
     def batch_receive_messages(self, message_type=None, batch_size=10):
+        """Recieve a batch of messages with a maximum of 10
+        messages at a time. You must delete the messages by
+        calling message.delete() after you are done with them."""
+
         messages = []
         response = self.client.receive_message(
             QueueUrl=self.get_queue_url(),
@@ -111,9 +121,17 @@ class MessagingHandler(MessagingBase):
 
 
 class Message(MessagingBase):
+    """Class for a message"""
     message_type = "MessageBase"
 
-    def __init__(self, queue_name=None, timestamp=None, ReceiptHandle=None, MessageId=None, **kwargs):
+    def __init__(
+        self,
+        queue_name=None,
+        timestamp=None,
+        ReceiptHandle=None,
+        MessageId=None,
+        **kwargs
+    ):
         super().__init__(queue_name=queue_name)
         self.timestamp = timestamp
         self.receipt_handle = ReceiptHandle
@@ -124,12 +142,14 @@ class Message(MessagingBase):
                 self.timestamp = value
 
     def delete(self):
+        """Delete the message"""
         self.client.delete_message(
             QueueUrl=self.get_queue_url(),
             ReceiptHandle=self.receipt_handle,
         )
 
     def get_message_body(self):
+        """Get the message body"""
         body = {
             'message_type': self.message_type,
         }
