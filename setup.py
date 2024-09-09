@@ -12,7 +12,7 @@ def get_long_description():
 
 setup(
     name='simplesqs',
-    version="0.3.3",
+    version="0.4.0",
     description='A library for sending and receiving AWS SQS messages.',
     long_description=get_long_description(),
     long_description_content_type="text/markdown",
