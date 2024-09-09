@@ -15,9 +15,24 @@ class MessageFactory():
 class MessagingBase():
     """Base class for messaging"""
 
-    def __init__(self, queue_name=None):
+    class NoSuchAWSProfile(Exception):
+        """
+        We raise this if the AWS profile defined in the deployfish.yml file
+        does not exist in the user's ``~/.aws/config`` file.
+        """
+
+    def __init__(self, queue_name=None, aws_profile=None, aws_region=None):
         self.queue_name = queue_name
-        self.client = boto3.client('sqs', region_name='us-west-2')
+        if aws_profile:
+            if aws_profile not in boto3.session.Session().available_profiles:
+                raise self.NoSuchAWSProfile(
+                    f"AWS profile '{aws_profile}' does not exist in your ~/.aws/config"
+                )
+            session = boto3.Session(profile_name=aws_profile, region_name=aws_region)
+        else:
+            session = boto3.Session(region_name=aws_region)
+        # self.client = boto3.client('sqs', region_name='us-west-2')
+        self.client = session.client('sqs')
 
     def get_queue_url(self):
         """Get the URL of the queue"""
